@@ -15,8 +15,8 @@ public class Caster<T extends Voice> {
         mOnCast.call(receiver);
     }
 
-    public Caster<T> receiveOn(Switcher switcher) {
-        mOnCast = new OnReceiveSwitch<>(mOnCast, new SwitchAlter<T>(switcher));
+    public Caster<T> receiveOn(Switcher<T> switcher) {
+        mOnCast = new OnReceiveSwitch<>(mOnCast, new SwitchAlter<>(switcher));
         return this;
     }
 
@@ -34,9 +34,9 @@ public class Caster<T extends Voice> {
 
     private static class SwitchAlter<T extends Voice> implements Alter<T> {
 
-        private Switcher mSwitcher;
+        private Switcher<T> mSwitcher;
 
-        public SwitchAlter(Switcher switcher) {
+        public SwitchAlter(Switcher<T> switcher) {
             mSwitcher = switcher;
         }
 

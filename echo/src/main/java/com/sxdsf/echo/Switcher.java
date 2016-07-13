@@ -7,7 +7,7 @@ package com.sxdsf.echo;
  * @date 2016/7/12 15:06
  * @desc 用于线程切换
  */
-public interface Switcher {
+public interface Switcher<T extends Voice> {
 
     /**
      * 切换方法
@@ -15,5 +15,5 @@ public interface Switcher {
      * @param receiver 被切换的接收者
      * @return
      */
-    <T extends Voice> Receiver<T> switches(Receiver<T> receiver);
+    Receiver<T> switches(Receiver<T> receiver);
 }
