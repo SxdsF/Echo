@@ -11,8 +11,6 @@ public interface Cast {
 
     /**
      * 是否在解除接收的状态
-     *
-     * @return
      */
     boolean isUnReceived();
 
