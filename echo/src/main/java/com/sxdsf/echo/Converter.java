@@ -7,5 +7,5 @@ package com.sxdsf.echo;
  * @date 2016/7/12 15:16
  * @desc caster的整体变化
  */
-public interface Converter<T extends Voice, R extends Voice, K extends Receiver<T>, V extends Receiver<R>> extends Action2<Caster<T, K>, Caster<R, V>> {
+public interface Converter<T extends Voice, R extends Voice> extends Action2<Caster<T>, Caster<R>> {
 }

@@ -9,10 +9,9 @@ import android.support.annotation.NonNull;
  * @date 2016/7/12 13:58
  * @desc 发声者，子类必须继承此类并且依照业务场景，重新定义或命名相应的方法
  */
-public abstract class Caster<T extends Voice, R extends Receiver<T>> {
+public abstract class Caster<T extends Voice> {
 
-    OnCast<T> mOnCast;
-    private final AcceptorWrapperFactory<T, R> mAcceptorWrapperFactory;
+    private final OnCast<T> mOnCast;
 
     /**
      * 发送方法
@@ -20,15 +19,11 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param receiver 接收者
      */
     @NeedRewrite
-    protected Cast cast(R receiver) {
+    protected Cast cast(Receiver<T> receiver) {
         if (receiver instanceof Acceptor) {
             return Caster.cast((Acceptor<T>) receiver, this);
         }
-        if (mAcceptorWrapperFactory == null) {
-            return Caster.cast(new AcceptorWrapper<T, Receiver<T>>(receiver) {
-            }, this);
-        }
-        return Caster.cast(mAcceptorWrapperFactory.createWrapper(receiver), this);
+        return Caster.cast(wrap(receiver, true, false), this);
     }
 
     /**
@@ -37,8 +32,8 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param switcher 执行的线程切换
      */
     @NeedRewrite
-    protected Caster<T, R> castOn(@NonNull Switcher<T, R> switcher) {
-        return switcher.castOn(this);
+    protected Caster<T> castOn(@NonNull Switcher<T> switcher) {
+        return create(new AlterCastOn<>(this, switcher));
     }
 
     /**
@@ -47,8 +42,8 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param switcher 执行的线程切换
      */
     @NeedRewrite
-    protected Caster<T, R> receiveOn(@NonNull Switcher<T, R> switcher) {
-        return switcher.receiveOn(this);
+    protected Caster<T> receiveOn(@NonNull Switcher<T> switcher) {
+        return lift(new AlterReceiveOn<>(switcher));
     }
 
     /**
@@ -57,7 +52,7 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param converter 执行转换方法的转化者
      */
     @NeedRewrite
-    protected <K extends Voice, V extends Receiver<K>> Caster<K, V> convert(@NonNull Converter<T, K, R, V> converter) {
+    protected <R extends Voice> Caster<R> convert(@NonNull Converter<T, R> converter) {
         return converter.call(this);
     }
 
@@ -67,13 +62,35 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param cls 要转换的类型
      */
     @NeedRewrite
-    protected <K extends Caster<? extends Voice, ? extends Receiver<T>>> K classCast(@NonNull Class<K> cls) {
+    protected <K extends Caster<? extends Voice>> K classCast(@NonNull Class<K> cls) {
         return cls.cast(this);
     }
 
-    protected Caster(OnCast<T> onCast, AcceptorWrapperFactory<T, R> acceptorWrapperFactory) {
+    /**
+     * 用于变化的方法
+     *
+     * @param alter 执行变换的对象
+     */
+    private Caster<T> lift(Alter<T> alter) {
+        return create(new OnCastLift<>(mOnCast, alter));
+    }
+
+    /**
+     * 创建一个新的Caster
+     *
+     * @param onCast 当发声时的对象
+     */
+    protected abstract Caster<T> create(OnCast<T> onCast);
+
+    /**
+     * 包装接收者
+     *
+     * @param receiver 接收者
+     */
+    protected abstract Acceptor<T> wrap(Receiver<T> receiver, boolean isOverride, boolean isMerge);
+
+    protected Caster(OnCast<T> onCast) {
         mOnCast = onCast;
-        mAcceptorWrapperFactory = acceptorWrapperFactory;
     }
 
     /**
@@ -82,10 +99,8 @@ public abstract class Caster<T extends Voice, R extends Receiver<T>> {
      * @param acceptor 接收者
      * @param caster   发声者
      */
-    private static <T extends Voice, R extends Receiver<T>> Cast cast(Acceptor<T> acceptor, Caster<T, R> caster) {
-        if (!acceptor.isUnReceived()) {
-            caster.mOnCast.call(acceptor);
-        }
+    private static <T extends Voice> Cast cast(Acceptor<T> acceptor, Caster<T> caster) {
+        caster.mOnCast.call(acceptor);
         return acceptor;
     }
 }

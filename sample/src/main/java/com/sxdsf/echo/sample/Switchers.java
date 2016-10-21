@@ -2,10 +2,9 @@ package com.sxdsf.echo.sample;
 
 import android.os.Looper;
 
+import com.sxdsf.echo.Acceptor;
 import com.sxdsf.echo.Action0;
-import com.sxdsf.echo.Caster;
 import com.sxdsf.echo.EchoHandler;
-import com.sxdsf.echo.OnCast;
 import com.sxdsf.echo.Receiver;
 import com.sxdsf.echo.Switcher;
 
@@ -24,11 +23,11 @@ class Switchers {
     /**
      * 主线程的切换者
      */
-    private final Switcher<Response, Callback> MAIN;
+    private final Switcher<Response> MAIN;
     /**
      * 异步线程的切换者
      */
-    private final Switcher<Response, Callback> ASYNC;
+    private final Switcher<Response> ASYNC;
 
     /**
      * 单一实例
@@ -49,7 +48,7 @@ class Switchers {
      *
      * @return
      */
-    static Switcher<Response, Callback> mainThread() {
+    static Switcher<Response> mainThread() {
         return INSTANCE.MAIN;
     }
 
@@ -58,14 +57,14 @@ class Switchers {
      *
      * @return
      */
-    static Switcher<Response, Callback> asyncThread() {
+    static Switcher<Response> asyncThread() {
         return INSTANCE.ASYNC;
     }
 
     /**
      * 主线程的切换类
      */
-    private static class MainThreadSwitcher extends Switcher<Response, Callback> {
+    private static class MainThreadSwitcher extends Switcher<Response> {
         private final EchoHandler mCallbackHandler;
 
         private MainThreadSwitcher() {
@@ -78,25 +77,17 @@ class Switchers {
         }
 
         @Override
-        public Callback createOnCastReceiver(final Receiver<Response> responseReceiver) {
-            return new CallbackWrapper((Callback) responseReceiver);
-        }
-
-        @Override
-        public Callback createOnReceiveReceiver(Receiver<Response> responseReceiver) {
-            return new CallbackWrapper(new MainSwitchCallback(responseReceiver, mCallbackHandler));
-        }
-
-        @Override
-        protected Caster<Response, Callback> createOnCastCaster(OnCast<Response> onCast) {
-            return Call.create(onCast);
+        protected Acceptor<Response> createOnReceiveReceiver(Receiver<Response> responseReceiver, Worker worker) {
+            CallbackOnCallback callbackOnCallback = new CallbackOnCallback((Callback) responseReceiver, true, false, worker);
+            callbackOnCallback.init();
+            return callbackOnCallback;
         }
     }
 
     /**
      * 异步线程的切换者
      */
-    private static class AsyncThreadSwitcher extends Switcher<Response, Callback> {
+    private static class AsyncThreadSwitcher extends Switcher<Response> {
 
         private final ExecutorService mExecutorService;
 
@@ -110,161 +101,98 @@ class Switchers {
         }
 
         @Override
-        public Callback createOnCastReceiver(final Receiver<Response> responseReceiver) {
-            return new CallbackWrapper((Callback) responseReceiver);
-        }
-
-        @Override
-        public Callback createOnReceiveReceiver(Receiver<Response> responseReceiver) {
-            return new CallbackWrapper(new AsyncSwitchCallback(responseReceiver, mExecutorService));
-        }
-
-        @Override
-        protected Caster<Response, Callback> createOnCastCaster(OnCast<Response> onCast) {
-            return Call.create(onCast);
+        protected Acceptor<Response> createOnReceiveReceiver(Receiver<Response> responseReceiver, Worker worker) {
+            CallbackOnCallback callbackOnCallback = new CallbackOnCallback((Callback) responseReceiver, true, false, worker);
+            callbackOnCallback.init();
+            return callbackOnCallback;
         }
     }
 
-    /**
-     * 线程变换基本处理的类
-     */
-    private static abstract class SwitchCallback implements Callback {
+    private static class CallbackOnCallback extends CallbackWrapper {
 
-        Callback mRawCallback;
+        private final Switcher.Worker mWorker;
 
-        private SwitchCallback(Receiver<Response> rawCallback) {
-            mRawCallback = (Callback) rawCallback;
+        CallbackOnCallback(Callback wrapped, boolean isOverride, boolean isMerge, Switcher.Worker worker) {
+            super(wrapped, isOverride, isMerge);
+            mWorker = worker;
+
         }
-    }
 
-    /**
-     * 主线程的处理
-     */
-    private static class MainSwitchCallback extends SwitchCallback {
-
-        private EchoHandler mCallbackHandler;
-
-        private MainSwitchCallback(Receiver<Response> rawCallback, EchoHandler messageHandler) {
-            super(rawCallback);
-            mCallbackHandler = messageHandler;
+        private void init() {
+            if (getWrapped() != null && getWrapped() instanceof Acceptor) {
+                ((Acceptor) getWrapped()).add(mWorker);
+                ((Acceptor) getWrapped()).add(this);
+            }
         }
 
         @Override
         public void onStart() {
-            if (Looper.getMainLooper() == Looper.myLooper()) {
-                mRawCallback.onStart();
-            } else {
-                Action0 temp = new Action0() {
-                    @Override
-                    public void call() {
-                        mRawCallback.onStart();
-                    }
-                };
-                enQueue(temp);
+            if (isUnReceived()) {
+                return;
             }
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            if (Looper.getMainLooper() == Looper.myLooper()) {
-                mRawCallback.onError(t);
-            } else {
-                Action0 temp = new Action0() {
-                    @Override
-                    public void call() {
-                        mRawCallback.onError(t);
-                    }
-                };
-                enQueue(temp);
-            }
-        }
-
-        @Override
-        public void onSuccess(final Response response) {
-            if (Looper.getMainLooper() == Looper.myLooper()) {
-                mRawCallback.onSuccess(response);
-            } else {
-                Action0 temp = new Action0() {
-                    @Override
-                    public void call() {
-                        mRawCallback.onSuccess(response);
-                    }
-                };
-                enQueue(temp);
-            }
-        }
-
-        @Override
-        public void onCancel() {
-            if (Looper.getMainLooper() == Looper.myLooper()) {
-                mRawCallback.onCancel();
-            } else {
-                Action0 temp = new Action0() {
-                    @Override
-                    public void call() {
-                        mRawCallback.onCancel();
-                    }
-                };
-                enQueue(temp);
-            }
-        }
-
-        private void enQueue(Action0 action0) {
-            mCallbackHandler.enQueue(action0);
-            if (!mCallbackHandler.isRunning()) {
-                mCallbackHandler.sendMessage(mCallbackHandler.obtainMessage());
-            }
-        }
-    }
-
-    /**
-     * 异步线程的处理
-     */
-    private static class AsyncSwitchCallback extends SwitchCallback {
-
-        private final ExecutorService mExecutorService;
-
-        private AsyncSwitchCallback(Receiver<Response> rawCallback, ExecutorService executorService) {
-            super(rawCallback);
-            mExecutorService = executorService;
-        }
-
-        @Override
-        public void onStart() {
-            mExecutorService.execute(new Runnable() {
+            mWorker.switches(new Action0() {
                 @Override
-                public void run() {
-                    mRawCallback.onStart();
+                public void call() {
+                    if (getWrapped() != null) {
+                        if (getWrapped() instanceof Acceptor && ((Acceptor) getWrapped()).isUnReceived()) {
+                            return;
+                        }
+                        getWrapped().onStart();
+                    }
                 }
             });
         }
 
         @Override
         public void onError(final Throwable t) {
-            mExecutorService.execute(new Runnable() {
+            if (isUnReceived()) {
+                return;
+            }
+            mWorker.switches(new Action0() {
                 @Override
-                public void run() {
-                    mRawCallback.onError(t);
+                public void call() {
+                    if (getWrapped() != null) {
+                        if (getWrapped() instanceof Acceptor && ((Acceptor) getWrapped()).isUnReceived()) {
+                            return;
+                        }
+                        getWrapped().onError(t);
+                    }
                 }
             });
         }
 
         @Override
         public void onSuccess(final Response response) {
-            mExecutorService.execute(new Runnable() {
+            if (isUnReceived()) {
+                return;
+            }
+            mWorker.switches(new Action0() {
                 @Override
-                public void run() {
-                    mRawCallback.onSuccess(response);
+                public void call() {
+                    if (getWrapped() != null) {
+                        if (getWrapped() instanceof Acceptor && ((Acceptor) getWrapped()).isUnReceived()) {
+                            return;
+                        }
+                        getWrapped().onSuccess(response);
+                    }
                 }
             });
         }
 
         @Override
         public void onCancel() {
-            mExecutorService.execute(new Runnable() {
+            if (isUnReceived()) {
+                return;
+            }
+            mWorker.switches(new Action0() {
                 @Override
-                public void run() {
-                    mRawCallback.onCancel();
+                public void call() {
+                    if (getWrapped() != null) {
+                        if (getWrapped() instanceof Acceptor && ((Acceptor) getWrapped()).isUnReceived()) {
+                            return;
+                        }
+                        getWrapped().onCancel();
+                    }
                 }
             });
         }

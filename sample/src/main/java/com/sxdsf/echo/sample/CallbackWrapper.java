@@ -10,29 +10,41 @@ import com.sxdsf.echo.AcceptorWrapper;
  * @desc 文件描述
  */
 
-public class CallbackWrapper extends AcceptorWrapper<Response, Callback> implements Callback {
+class CallbackWrapper extends AcceptorWrapper<Response, Callback> implements Callback {
 
-    public CallbackWrapper(Callback wrapped) {
-        super(wrapped);
+    CallbackWrapper(Callback wrapped, boolean isOverride, boolean isMerge) {
+        super(wrapped, isOverride, isMerge);
     }
 
     @Override
     public void onStart() {
+        if (getWrapped() == null) {
+            return;
+        }
         getWrapped().onStart();
     }
 
     @Override
     public void onError(Throwable t) {
+        if (getWrapped() == null) {
+            return;
+        }
         getWrapped().onError(t);
     }
 
     @Override
     public void onSuccess(Response response) {
+        if (getWrapped() == null) {
+            return;
+        }
         getWrapped().onSuccess(response);
     }
 
     @Override
     public void onCancel() {
+        if (getWrapped() == null) {
+            return;
+        }
         getWrapped().onCancel();
     }
 }

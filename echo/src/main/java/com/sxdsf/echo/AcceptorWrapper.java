@@ -14,8 +14,14 @@ public abstract class AcceptorWrapper<T extends Voice, R extends Receiver<T>> ex
      */
     private final R mWrapped;
 
-    public AcceptorWrapper(R wrapped) {
-        mWrapped = wrapped;
+    public AcceptorWrapper(R wrapped, boolean isOverride, boolean isMerge) {
+        if (wrapped instanceof Acceptor) {
+            mWrapped = isOverride ? wrapped : null;
+            mCastList = isMerge ? ((Acceptor) wrapped).mCastList : new CastList();
+        } else {
+            mWrapped = wrapped;
+            mCastList = new CastList();
+        }
     }
 
     /**

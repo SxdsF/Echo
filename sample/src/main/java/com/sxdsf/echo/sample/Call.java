@@ -1,10 +1,10 @@
 package com.sxdsf.echo.sample;
 
-import com.sxdsf.echo.AcceptorWrapper;
-import com.sxdsf.echo.AcceptorWrapperFactory;
+import com.sxdsf.echo.Acceptor;
 import com.sxdsf.echo.Cast;
 import com.sxdsf.echo.Caster;
 import com.sxdsf.echo.OnCast;
+import com.sxdsf.echo.Receiver;
 import com.sxdsf.echo.Switcher;
 
 /**
@@ -15,14 +15,10 @@ import com.sxdsf.echo.Switcher;
  * @desc 文件描述
  */
 
-public class Call extends Caster<Response, Callback> {
+public class Call extends Caster<Response> {
 
-    private Call(OnCall onCall, AcceptorWrapperFactory<Response, Callback> acceptorWrapperFactory) {
-        super(onCall, acceptorWrapperFactory);
-    }
-
-    private Call(OnCast<Response> onCast, AcceptorWrapperFactory<Response, Callback> acceptorWrapperFactory) {
-        super(onCast, acceptorWrapperFactory);
+    private Call(OnCast<Response> onCast) {
+        super(onCast);
     }
 
     public Cast execute(Callback callback) {
@@ -30,28 +26,24 @@ public class Call extends Caster<Response, Callback> {
     }
 
     public static Call create(OnCall onCall) {
-        return new Call(onCall, new AcceptorWrapperFactory<Response, Callback>() {
-            @Override
-            public AcceptorWrapper<Response, Callback> createWrapper(Callback receiver) {
-                return new CallbackWrapper(receiver);
-            }
-        });
+        return new Call(onCall);
     }
 
-    public static Call create(OnCast<Response> onCall) {
-        return new Call(onCall, new AcceptorWrapperFactory<Response, Callback>() {
-            @Override
-            public AcceptorWrapper<Response, Callback> createWrapper(Callback receiver) {
-                return new CallbackWrapper(receiver);
-            }
-        });
+    @Override
+    protected Caster<Response> create(OnCast<Response> onCast) {
+        return new Call(onCast);
     }
 
-    public Call callOn(Switcher<Response, Callback> switcher) {
+    @Override
+    protected Acceptor<Response> wrap(Receiver<Response> receiver, boolean isOverride, boolean isMerge) {
+        return new CallbackWrapper((Callback) receiver, isOverride, isMerge);
+    }
+
+    public Call callOn(Switcher<Response> switcher) {
         return (Call) super.castOn(switcher);
     }
 
-    public Call callbackOn(Switcher<Response, Callback> switcher) {
+    public Call callbackOn(Switcher<Response> switcher) {
         return (Call) super.receiveOn(switcher);
     }
 

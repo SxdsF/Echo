@@ -10,9 +10,9 @@ import com.sxdsf.echo.Caster;
  * @desc 文件描述
  */
 
-public abstract class Converter implements com.sxdsf.echo.Converter<Response, Response, Callback, Callback> {
+public abstract class Converter implements com.sxdsf.echo.Converter<Response, Response> {
     @Override
-    public Caster<Response, Callback> call(Caster<Response, Callback> responseCallbackCaster) {
+    public Caster<Response> call(Caster<Response> responseCallbackCaster) {
         return convert((Call) responseCallbackCaster);
     }
 

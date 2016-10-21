@@ -7,9 +7,9 @@ package com.sxdsf.echo;
  * @date 2016/8/22 11:42
  * @desc 接收者，在核心库内使用的都是此类或子类
  */
-public abstract class Acceptor<T extends Voice> implements Receiver<T>, Cast {
+public class Acceptor<T extends Voice> implements Receiver<T>, Cast {
 
-    private final CastList mCastList = new CastList();
+    CastList mCastList;
 
     @Override
     public boolean isUnReceived() {
