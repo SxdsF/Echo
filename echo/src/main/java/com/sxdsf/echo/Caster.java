@@ -2,6 +2,13 @@ package com.sxdsf.echo;
 
 import android.support.annotation.NonNull;
 
+import com.sxdsf.echo.annotations.NeedRewrite;
+import com.sxdsf.echo.functions.Action1;
+import com.sxdsf.echo.functions.Action2;
+import com.sxdsf.echo.internal.alters.AlterCastOn;
+import com.sxdsf.echo.internal.alters.AlterReceiveOn;
+import com.sxdsf.echo.internal.alters.OnCastLift;
+
 /**
  * com.sxdsf.echo.Caster
  *
@@ -32,7 +39,7 @@ public abstract class Caster<T extends Voice> {
      * @param switcher 执行的线程切换
      */
     @NeedRewrite
-    protected Caster<T> castOn(@NonNull Switcher<T> switcher) {
+    protected Caster<T> castOn(@NonNull Switcher switcher) {
         return create(new AlterCastOn<>(this, switcher));
     }
 
@@ -42,8 +49,8 @@ public abstract class Caster<T extends Voice> {
      * @param switcher 执行的线程切换
      */
     @NeedRewrite
-    protected Caster<T> receiveOn(@NonNull Switcher<T> switcher) {
-        return lift(new AlterReceiveOn<>(switcher));
+    protected Caster<T> receiveOn(@NonNull Switcher switcher) {
+        return lift(new AlterReceiveOn<>(this, switcher));
     }
 
     /**
@@ -89,6 +96,13 @@ public abstract class Caster<T extends Voice> {
      */
     protected abstract Acceptor<T> wrap(Receiver<T> receiver, boolean isOverride, boolean isMerge);
 
+    /**
+     * 创建一个接收时线程切换的接收者
+     *
+     * @param tReceiver 接收者
+     */
+    protected abstract Acceptor<T> createOnReceiveReceiver(Receiver<T> tReceiver, Switcher.Worker worker);
+
     protected Caster(OnCast<T> onCast) {
         mOnCast = onCast;
     }
@@ -102,5 +116,14 @@ public abstract class Caster<T extends Voice> {
     private static <T extends Voice> Cast cast(Acceptor<T> acceptor, Caster<T> caster) {
         caster.mOnCast.call(acceptor);
         return acceptor;
+    }
+
+    public interface OnCast<T extends Voice> extends Action1<Receiver<T>> {
+    }
+
+    public interface Alter<T extends Voice> extends Action2<Receiver<T>, Receiver<T>> {
+    }
+
+    public interface Converter<T extends Voice, R extends Voice> extends Action2<Caster<T>, Caster<R>> {
     }
 }

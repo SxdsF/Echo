@@ -1,7 +1,9 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.casts;
+
+import com.sxdsf.echo.Cast;
 
 /**
- * com.sxdsf.echo.Casts
+ * com.sxdsf.echo.casts.Casts
  *
  * @author 孙博闻
  * @date 2016/10/14 15:28

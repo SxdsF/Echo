@@ -1,6 +1,6 @@
 package com.sxdsf.echo.sample;
 
-import com.sxdsf.echo.OnCast;
+import com.sxdsf.echo.Caster;
 
 /**
  * com.sxdsf.echo.sample.OnCall
@@ -10,5 +10,5 @@ import com.sxdsf.echo.OnCast;
  * @desc 文件描述
  */
 
-public interface OnCall extends OnCast<Response> {
+public interface OnCall extends Caster.OnCast<Response> {
 }

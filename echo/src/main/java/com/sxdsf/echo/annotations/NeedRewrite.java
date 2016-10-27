@@ -1,4 +1,4 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * com.sxdsf.echo.NeedRewrite
+ * com.sxdsf.echo.annotations.NeedRewrite
  *
  * @author 孙博闻
  * @date 2016/10/10 15:29

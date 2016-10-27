@@ -1,5 +1,7 @@
 package com.sxdsf.echo;
 
+import com.sxdsf.echo.internal.utils.CastList;
+
 /**
  * com.sxdsf.echo.AcceptorWrapper
  *

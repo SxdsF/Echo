@@ -7,13 +7,17 @@ import android.view.View;
 import com.sxdsf.echo.Acceptor;
 import com.sxdsf.echo.Cast;
 import com.sxdsf.echo.Receiver;
+import com.sxdsf.echo.switchers.Switchers;
 
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
+
+    private boolean mCancel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,28 +33,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void echo() {
-        Callback callback = new Callback() {
-
-            @Override
-            public void onStart() {
-                System.out.println("调用onStart在" + Thread.currentThread());
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("调用onError在" + Thread.currentThread());
-            }
-
-            @Override
-            public void onSuccess(Response response) {
-                System.out.println("调用onSuccess在" + Thread.currentThread());
-            }
-
-            @Override
-            public void onCancel() {
-                System.out.println("调用onCancel在" + Thread.currentThread());
-            }
-        };
         Cast cast = Call.
                 create(new OnCall() {
                     @Override
@@ -68,31 +50,39 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }).
-                callOn(Switchers.asyncThread()).
-                callbackOn(Switchers.mainThread()).
-                execute(callback);
-        if (!cast.isUnReceived()) {
-            cast.unReceive();
+                callOn(Switchers.io()).
+                callbackOn(Switchers.main()).
+                execute(new Callback() {
+
+                    @Override
+                    public void onStart() {
+                        System.out.println("调用onStart在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        System.out.println("调用onError在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onSuccess(Response response) {
+                        System.out.println("调用onSuccess在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        System.out.println("调用onCancel在" + Thread.currentThread());
+                    }
+                });
+        if (mCancel) {
+            if (!cast.isUnReceived()) {
+                cast.unReceive();
+            }
         }
+        mCancel = !mCancel;
     }
 
     private void rxJava() {
-        Subscriber<String> subscriber = new Subscriber<String>() {
-            @Override
-            public void onCompleted() {
-                System.out.println("onCompleted");
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                System.out.println("onError");
-            }
-
-            @Override
-            public void onNext(String s) {
-                System.out.println("onNext" + s);
-            }
-        };
         Subscription subscription = Observable.
                 create(new Observable.OnSubscribe<String>() {
                     @Override
@@ -103,11 +93,54 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }).
-                //                subscribeOn(Schedulers.io()).
-                        observeOn(Schedulers.io()).
-                        subscribe(subscriber);
+                subscribeOn(Schedulers.io()).
+                observeOn(AndroidSchedulers.mainThread()).
+                subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("onError");
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("onNext" + s);
+                    }
+                });
         if (!subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
+        Observable.
+                create(new Observable.OnSubscribe<String>() {
+                    @Override
+                    public void call(Subscriber<? super String> subscriber) {
+                        System.out.println("第二次callOn" + Thread.currentThread());
+                        if (!subscriber.isUnsubscribed()) {
+                            subscriber.onNext("第二次测试");
+                        }
+                    }
+                }).
+                subscribeOn(Schedulers.io()).
+                observeOn(AndroidSchedulers.mainThread()).
+                subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("第二次onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("第二次onError");
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("第二次onNext" + s);
+                    }
+                });
     }
 }

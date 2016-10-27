@@ -1,20 +1,35 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.internal.utils;
 
+import com.sxdsf.echo.Cast;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * com.sxdsf.echo.CastList
+ * com.sxdsf.echo.internal.utils.CastList
  *
  * @author 孙博闻
  * @date 2016/10/14 17:52
  * @desc 声音发出者和接收者关系的list
  */
-public class CastList implements Cast {
+public final class CastList implements Cast {
 
     private List<Cast> mCasts;
     private volatile boolean mUnReceived;
+
+    public CastList() {
+    }
+
+    public CastList(final Cast... subscriptions) {
+        this.mCasts = new LinkedList<>(Arrays.asList(subscriptions));
+    }
+
+    public CastList(Cast s) {
+        this.mCasts = new LinkedList<>();
+        this.mCasts.add(s);
+    }
 
     public void add(final Cast s) {
         if (s.isUnReceived()) {
@@ -33,7 +48,6 @@ public class CastList implements Cast {
                 }
             }
         }
-        // call after leaving the synchronized block so we're not holding a lock while executing this
         s.unReceive();
     }
 
@@ -48,7 +62,6 @@ public class CastList implements Cast {
                 unReceived = subs.remove(s);
             }
             if (unReceived) {
-                // if we removed successfully we then need to call unsubscribe on it (outside of the lock)
                 s.unReceive();
             }
         }
@@ -63,7 +76,6 @@ public class CastList implements Cast {
         }
     }
 
-    /* perf support */
     public void clear() {
         if (!mUnReceived) {
             List<Cast> list;
@@ -75,11 +87,6 @@ public class CastList implements Cast {
         }
     }
 
-    /**
-     * Returns true if this composite is not mUnReceived and contains mCastList.
-     *
-     * @return {@code true} if this composite is not mUnReceived and contains mCastList.
-     */
     public boolean hasCasts() {
         if (!mUnReceived) {
             synchronized (this) {
@@ -106,7 +113,6 @@ public class CastList implements Cast {
                 list = mCasts;
                 mCasts = null;
             }
-            // we will only get here once
             unReceiveFromAll(list);
         }
     }

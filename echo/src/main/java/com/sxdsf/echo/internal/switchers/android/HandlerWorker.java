@@ -1,10 +1,15 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.internal.switchers.android;
 
 import android.os.Handler;
 import android.os.Message;
 
+import com.sxdsf.echo.Cast;
+import com.sxdsf.echo.Switcher;
+import com.sxdsf.echo.casts.Casts;
+import com.sxdsf.echo.functions.Action0;
+
 /**
- * com.sxdsf.echo.HandlerWorker
+ * com.sxdsf.echo.internal.switchers.android.HandlerWorker
  *
  * @author 孙博闻
  * @date 2016/10/14 15:22
@@ -13,8 +18,8 @@ import android.os.Message;
 
 public class HandlerWorker extends Switcher.Worker {
 
-    final Handler mHandler;
-    volatile boolean mUnReceived;
+    protected final Handler mHandler;
+    protected volatile boolean mUnReceived;
 
     public HandlerWorker(Handler handler) {
         this.mHandler = handler;
@@ -28,7 +33,7 @@ public class HandlerWorker extends Switcher.Worker {
 
         SwitchedAction switchedAction = new SwitchedAction(action0, mHandler);
         Message message = Message.obtain(mHandler, switchedAction);
-        message.obj = this;
+        message.obj = this;//token
         mHandler.sendMessage(message);
 
         if (mUnReceived) {

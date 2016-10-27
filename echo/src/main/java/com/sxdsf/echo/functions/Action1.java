@@ -1,7 +1,7 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.functions;
 
 /**
- * com.sxdsf.echo.Action1
+ * com.sxdsf.echo.functions.Action1
  *
  * @author 孙博闻
  * @date 2016/7/12 14:10

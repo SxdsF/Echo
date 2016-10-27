@@ -1,7 +1,11 @@
-package com.sxdsf.echo;
+package com.sxdsf.echo.internal.switchers.android;
+
+import com.sxdsf.echo.Cast;
+import com.sxdsf.echo.casts.Casts;
+import com.sxdsf.echo.functions.Action0;
 
 /**
- * com.sxdsf.echo.EchoHandlerWorker
+ * com.sxdsf.echo.internal.switchers.android.EchoHandlerWorker
  *
  * @author 孙博闻
  * @date 2016/10/14 16:42
@@ -10,11 +14,8 @@ package com.sxdsf.echo;
 
 public class EchoHandlerWorker extends HandlerWorker {
 
-    private final EchoHandler mEchoHandler;
-
     public EchoHandlerWorker(EchoHandler handler) {
         super(handler);
-        mEchoHandler = handler;
     }
 
     @Override
@@ -23,14 +24,20 @@ public class EchoHandlerWorker extends HandlerWorker {
             return Casts.unReceived();
         }
 
-        SwitchedAction switchedAction = new SwitchedAction(action0, mEchoHandler);
-        mEchoHandler.enQueue(switchedAction);
-        if (!mEchoHandler.isRunning()) {
-            mEchoHandler.sendMessage(mEchoHandler.obtainMessage());
+        if (!(mHandler instanceof EchoHandler)) {
+            throw new ClassCastException("need EchoHandler");
+        }
+
+        EchoHandler handler = (EchoHandler) mHandler;
+
+        SwitchedAction switchedAction = new SwitchedAction(action0, handler);
+        handler.enQueue(switchedAction);
+        if (!handler.isRunning()) {
+            handler.sendMessage(handler.obtainMessage());
         }
 
         if (mUnReceived) {
-            mEchoHandler.clear();
+            handler.clear();
             return Casts.unReceived();
         }
 
@@ -40,7 +47,12 @@ public class EchoHandlerWorker extends HandlerWorker {
     @Override
     public void unReceive() {
         mUnReceived = true;
-        mEchoHandler.clear();
+        if (!(mHandler instanceof EchoHandler)) {
+            throw new ClassCastException("need EchoHandler");
+        }
+
+        EchoHandler handler = (EchoHandler) mHandler;
+        handler.clear();
     }
 
     private static class SwitchedAction implements Action0, Cast {
