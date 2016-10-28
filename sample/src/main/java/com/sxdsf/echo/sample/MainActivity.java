@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 echo();
-                //                rxJava();
+                rxJava();
             }
         });
     }
@@ -74,12 +74,50 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("调用onCancel在" + Thread.currentThread());
                     }
                 });
-        if (mCancel) {
-            if (!cast.isUnReceived()) {
-                cast.unReceive();
-            }
+        if (!cast.isUnReceived()) {
+            cast.unReceive();
         }
-        mCancel = !mCancel;
+        Call.
+                create(new OnCall() {
+                    @Override
+                    public void call(Receiver<Response> callbackReceiver) {
+                        System.out.println("第二次callOn" + Thread.currentThread());
+                        if (callbackReceiver instanceof Acceptor) {
+                            Acceptor acceptor = (Acceptor) callbackReceiver;
+                            if (!acceptor.isUnReceived() && callbackReceiver instanceof Callback) {
+                                Callback callback = (Callback) callbackReceiver;
+                                callback.onStart();
+                                callback.onSuccess(new Response());
+                                callback.onError(new Exception());
+                                callback.onCancel();
+                            }
+                        }
+                    }
+                }).
+                callOn(Switchers.io()).
+                callbackOn(Switchers.main()).
+                execute(new Callback() {
+
+                    @Override
+                    public void onStart() {
+                        System.out.println("第二次调用onStart在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        System.out.println("第二次调用onError在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onSuccess(Response response) {
+                        System.out.println("第二次调用onSuccess在" + Thread.currentThread());
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        System.out.println("第二次调用onCancel在" + Thread.currentThread());
+                    }
+                });
     }
 
     private void rxJava() {
